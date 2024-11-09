@@ -1,15 +1,17 @@
+#define LIGHT_COUNT 2
 
 Texture2D shaderTexture : register(t0);
-Texture2D depthMapTexture : register(t1);
+Texture2D depthMapTexture[LIGHT_COUNT] : register(t1);
 
 SamplerState diffuseSampler  : register(s0);
-SamplerState shadowSampler : register(s1);
+SamplerState shadowSampler[LIGHT_COUNT] : register(s1);
 
 cbuffer LightBuffer : register(b0)
 {
-	float4 ambient;
-	float4 diffuse;
-	float3 direction;
+	float4 ambient[LIGHT_COUNT];
+	float4 diffuse[LIGHT_COUNT];
+	float4 direction[LIGHT_COUNT];
+    float4 position[LIGHT_COUNT];
 };
 
 struct InputType
@@ -17,7 +19,7 @@ struct InputType
     float4 position : SV_POSITION;
     float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
-    float4 lightViewPos : TEXCOORD1;
+    float4 lightViewPos[LIGHT_COUNT] : TEXCOORD1;
 };
 
 // Calculate lighting intensity based on direction and normal. Combine with light colour.
@@ -41,7 +43,7 @@ bool hasDepthData(float2 uv)
 bool isInShadow(Texture2D sMap, float2 uv, float4 lightViewPosition, float bias)
 {
     // Sample the shadow map (get depth of geometry)
-    float depthValue = sMap.Sample(shadowSampler, uv).r;
+    float depthValue = sMap.Sample(shadowSampler[1], uv).r;
 	// Calculate the depth from the light.
     float lightDepthValue = lightViewPosition.z / lightViewPosition.w;
     lightDepthValue -= bias;
@@ -69,20 +71,24 @@ float4 main(InputType input) : SV_TARGET
     float4 colour = float4(0.f, 0.f, 0.f, 1.f);
     float4 textureColour = shaderTexture.Sample(diffuseSampler, input.tex);
 
-	// Calculate the projected texture coordinates.
-    float2 pTexCoord = getProjectiveCoords(input.lightViewPos);
-	
-    // Shadow test. Is or isn't in shadow
-    if (hasDepthData(pTexCoord))
+    float finalShadow = 1.0;
+    for (int i = 0; i < LIGHT_COUNT; i++)
     {
-        // Has depth map data
-        if (!isInShadow(depthMapTexture, pTexCoord, input.lightViewPos, shadowMapBias))
-        {
-            // is NOT in shadow, therefore light
-            colour = calculateLighting(-direction, input.normal, diffuse);
-        }
+       float2 pTexCoord = getProjectiveCoords(input.lightViewPos[i]);
+
+       if (hasDepthData(pTexCoord))
+       {            
+              if (!isInShadow(depthMapTexture[i], pTexCoord, input.lightViewPos[i], shadowMapBias))
+              {
+                   colour += calculateLighting(-direction[i], input.normal, diffuse[i]);
+              }                 
+       }
     }
-    
-    colour = saturate(colour + ambient);
+
+
+    for (int i = 0; i < LIGHT_COUNT; i++)
+    {
+        colour += ambient[i];
+    }
     return saturate(colour) * textureColour;
 }

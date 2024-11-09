@@ -20,6 +20,7 @@ public:
 
 protected:
 	bool render();
+	void texturePass();
 	void depthPass();
 	void finalPass();
 	void gui();
@@ -28,12 +29,21 @@ private:
 	TextureShader* textureShader;
 	PlaneMesh* mesh;
 
-	Light* light;
+	Light* light[2];
 	AModel* model;
 	ShadowShader* shadowShader;
 	DepthShader* depthShader;
 
-	ShadowMap* shadowMap;
+	ShadowMap* shadowMap[2];
+
+	OrthoMesh* orthoMesh;
+	RenderTexture* renderTexture;
+	CubeMesh* cube;
+	SphereMesh* sphere;
+	float modelRot = 0;
+	float lightPos[2][3];
+	float lightDir[2][3];
+	float lightDiff[2][4];
 };
 
 #endif
