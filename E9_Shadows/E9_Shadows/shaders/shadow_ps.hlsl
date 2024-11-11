@@ -18,6 +18,8 @@ cbuffer LightBuffer : register(b0)
     float4 attenuationConstant[LIGHT_COUNT]; // Float
     float4 attenuationLinear[LIGHT_COUNT]; // Float
     float4 attenuationQuadratic[LIGHT_COUNT]; // Float
+    float4 spotCutoffAngle[LIGHT_COUNT]; // Float
+    float4 spotOuterCutoffAngle[LIGHT_COUNT];
 };
 
 struct InputType
@@ -45,7 +47,7 @@ float4 calculatePointLight(float3 lightPosition, float3 normal, float4 diffuse, 
     float3 lightDirection = normalize(lightPosition - worldPos);
     float intensity = saturate(dot(normal, lightDirection));
     float4 colour = saturate(diffuse * intensity);
-
+    
     float dist = length(lightPosition - worldPos);
     float attenuation = 1 / (attenC + (attenL * dist) +
 		(attenQ * pow(dist, 2)));
@@ -53,11 +55,15 @@ float4 calculatePointLight(float3 lightPosition, float3 normal, float4 diffuse, 
 }
 
 float4 calculateSpotLight(float3 lightPosition, float3 lightDirection, float3 normal, float4 diffuse, float3 worldPosition,
-	float attenC, float attenL, float attenQ)
+	float attenC, float attenL, float attenQ, float cutoffAngle, float outerCutoffAngle)
 {
     float3 lightVector = normalize(lightPosition - worldPosition);
     float colour = max(dot(lightVector, lightDirection), 0.0f);
 
+    float spot = dot(lightVector, normalize(lightDirection));
+    float coneSize = smoothstep(cos(outerCutoffAngle), cos(cutoffAngle), spot);
+    colour *= coneSize;
+    
 	// Attenuation
     float dist = length(lightPosition - worldPosition);
     float attenuation = 1 / (attenC + (attenL * dist) +
@@ -118,13 +124,11 @@ float4 main(InputType input) : SV_TARGET
     float4 lightColour = float4(0, 0, 0, 0);
     float4 specColour = float4(0, 0, 0, 0);
 
-    float finalShadow = 1.0;
     for (int i = 0; i < LIGHT_COUNT; i++)
     {
-       float2 pTexCoord = getProjectiveCoords(input.lightViewPos[i]);
-
-       if (hasDepthData(pTexCoord))
-       {            
+        float2 pTexCoord = getProjectiveCoords(input.lightViewPos[i]);
+        if (hasDepthData(pTexCoord))
+        {
             if (!isInShadow(depthMapTexture[i], pTexCoord, input.lightViewPos[i], shadowMapBias))
             {
                 if (lightType[i].x == -1)
@@ -142,14 +146,14 @@ float4 main(InputType input) : SV_TARGET
                 }
                 else if (lightType[i].x == 2)
                 {
-                    lightColour += calculateSpotLight(lightPosition[i].xyz, lightDirection[i].xyz, input.normal, diffuse[i], input.worldPosition,
-				        attenuationConstant[i].x, attenuationLinear[i].x, attenuationQuadratic[i].x);
+                    lightColour += calculateSpotLight(lightPosition[i].xyz, -lightDirection[i].xyz, input.normal, diffuse[i], input.worldPosition,
+				        attenuationConstant[i].x, attenuationLinear[i].x, attenuationQuadratic[i].x, spotCutoffAngle[i].x, spotOuterCutoffAngle[i].x);
                 }
               
                 
                 specColour += calcSpecular(lightPosition[i].xyz, input.normal, input.viewVector, specular[i], specularPower[i].x, input.worldPosition);
-            }                 
-       }
+            }
+        }
     }
 
 

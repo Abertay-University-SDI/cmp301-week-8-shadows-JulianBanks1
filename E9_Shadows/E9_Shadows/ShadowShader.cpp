@@ -129,7 +129,10 @@ void ShadowShader::setShaderParameters(ID3D11DeviceContext* deviceContext, const
 	for (int i = 0; i < LIGHT_COUNT; i++)
 	{
 		dataPtr->lightView[i] = XMMatrixTranspose(light[i]->getViewMatrix());
-		dataPtr->lightProjection[i] = XMMatrixTranspose(light[i]->getOrthoMatrix());
+		if (light[i]->getType() == 0)
+			dataPtr->lightProjection[i] = XMMatrixTranspose(light[i]->getOrthoMatrix());
+		else
+			dataPtr->lightProjection[i] = XMMatrixTranspose(light[i]->getProjectionMatrix());
 	}
 	
 	deviceContext->Unmap(matrixBuffer, 0);
@@ -151,6 +154,8 @@ void ShadowShader::setShaderParameters(ID3D11DeviceContext* deviceContext, const
 		lightPtr->attenuationConstant[i] = XMFLOAT4(light[i]->getAttenuationConstant(), 1.0f, 1.0f, 1.0f);
 		lightPtr->attenuationLinear[i] = XMFLOAT4(light[i]->getAttenuationLinear(), 1.0f, 1.0f, 1.0f);
 		lightPtr->attenuationQuadratic[i] = XMFLOAT4(light[i]->getAttenuationQuadratic(), 1.0f, 1.0f, 1.0f);
+		lightPtr->spotCutoffAngle[i] = XMFLOAT4(light[i]->getSpotCutoffAngle(), 1.0f, 1.0f, 1.0f);
+		lightPtr->spotOuterCutoffAngle[i] = XMFLOAT4(light[i]->getSpotOuterCutoffAngle(), 1.0f, 1.0f, 1.0f);
 	}
 	deviceContext->Unmap(lightBuffer, 0);
 	deviceContext->PSSetConstantBuffers(0, 1, &lightBuffer);

@@ -35,6 +35,7 @@ private:
 
 
 	OrthoMesh* orthoMesh;
+	OrthoMesh* orthoMesh2;
 	RenderTexture* renderTexture;
 	CubeMesh* cube;
 	float modelRot = 0;
@@ -49,6 +50,7 @@ private:
 	float lightSpecPower[LIGHT_COUNT];
 	int lightType[LIGHT_COUNT];
 	float lightAtten[LIGHT_COUNT][3];
+	float spotCutoff[LIGHT_COUNT][2];
 	SphereMesh* lightSphere[LIGHT_COUNT];
 	ShadowMap* shadowMap[LIGHT_COUNT];
 };

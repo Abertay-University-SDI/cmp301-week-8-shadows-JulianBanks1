@@ -35,6 +35,8 @@ private:
 		XMFLOAT4 attenuationConstant[LIGHT_COUNT];
 		XMFLOAT4 attenuationLinear[LIGHT_COUNT];
 		XMFLOAT4 attenuationQuadratic[LIGHT_COUNT];
+		XMFLOAT4 spotCutoffAngle[LIGHT_COUNT];
+		XMFLOAT4 spotOuterCutoffAngle[LIGHT_COUNT];
 	};
 
 

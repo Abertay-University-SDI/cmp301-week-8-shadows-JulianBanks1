@@ -46,6 +46,8 @@ public:
 	void setAttenuationConstant(float val);
 	void setAttenuationLinear(float val);
 	void setAttenuationQuadratic(float val);
+	void setSpotCutoffAngle(float angle);
+	void setSpotOuterCutoffAngle(float angle);
 
 	// Getters
 	XMFLOAT4 getAmbientColour();		///< Get ambient colour, returns float4
@@ -61,6 +63,8 @@ public:
 	float getAttenuationConstant();
 	float getAttenuationLinear();
 	float getAttenuationQuadratic();
+	float getSpotCutoffAngle();
+	float getSpotOuterCutoffAngle();
 
 protected:
 	XMFLOAT4 ambientColour;
@@ -77,6 +81,8 @@ protected:
 	float attenuationConstant;
 	float attenuationLinear;
 	float attenuationQuadratic;
+	float spotCutoffAngle;
+	float spotOuterCutoffAngle;
 };
 
 #endif

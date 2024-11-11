@@ -29,8 +29,16 @@ void Light::generateProjectionMatrix(float screenNear, float screenFar)
 	float fieldOfView, screenAspect;
 
 	// Setup field of view and screen aspect for a square light source.
-	fieldOfView = (float)XM_PI / 2.0f;
-	screenAspect = 1.0f;
+	if (spotOuterCutoffAngle != 0)
+	{
+		fieldOfView = spotOuterCutoffAngle * 2.0f;
+		if (spotOuterCutoffAngle * 2.0f > 3.14f)
+			fieldOfView = 3.14f;
+	}
+	else
+		fieldOfView = ((float)XM_PI / 2.0f);
+
+	screenAspect = 1.5f;
 
 	// Create the projection matrix for the light.
 	projectionMatrix = XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNear, screenFar);
@@ -91,6 +99,17 @@ void Light::setAttenuationQuadratic(float val)
 {
 	attenuationQuadratic = val;
 }
+
+void Light::setSpotCutoffAngle(float angle)
+{
+	spotCutoffAngle = angle;
+}
+
+void Light::setSpotOuterCutoffAngle(float angle)
+{
+	spotOuterCutoffAngle = angle;
+}
+
 
 XMFLOAT4 Light::getAmbientColour()
 {
@@ -163,4 +182,14 @@ float Light::getAttenuationLinear()
 float Light::getAttenuationQuadratic()
 {
 	return attenuationQuadratic;
+}
+
+float Light::getSpotCutoffAngle()
+{
+	return spotCutoffAngle;
+}
+
+float Light::getSpotOuterCutoffAngle()
+{
+	return spotOuterCutoffAngle;
 }
