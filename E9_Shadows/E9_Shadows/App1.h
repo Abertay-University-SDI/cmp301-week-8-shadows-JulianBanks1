@@ -29,21 +29,28 @@ private:
 	TextureShader* textureShader;
 	PlaneMesh* mesh;
 
-	Light* light[2];
 	AModel* model;
 	ShadowShader* shadowShader;
 	DepthShader* depthShader;
 
-	ShadowMap* shadowMap[2];
 
 	OrthoMesh* orthoMesh;
 	RenderTexture* renderTexture;
 	CubeMesh* cube;
-	SphereMesh* sphere;
 	float modelRot = 0;
-	float lightPos[2][3];
-	float lightDir[2][3];
-	float lightDiff[2][4];
+
+	static const int LIGHT_COUNT = 2;
+	Light* light[LIGHT_COUNT];
+	float lightPos[LIGHT_COUNT][3];
+	float lightDir[LIGHT_COUNT][3];
+	float lightAmb[LIGHT_COUNT][4];
+	float lightDiff[LIGHT_COUNT][4];
+	float lightSpec[LIGHT_COUNT][4];
+	float lightSpecPower[LIGHT_COUNT];
+	int lightType[LIGHT_COUNT];
+	float lightAtten[LIGHT_COUNT][3];
+	SphereMesh* lightSphere[LIGHT_COUNT];
+	ShadowMap* shadowMap[LIGHT_COUNT];
 };
 
 #endif

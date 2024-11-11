@@ -9,6 +9,12 @@ cbuffer MatrixBuffer : register(b0)
 	matrix lightProjectionMatrix[LIGHT_COUNT];
 };
 
+cbuffer CameraBuffer : register(b1)
+{
+    float3 cameraPosition;
+    float padding;
+};
+
 struct InputType
 {
     float4 position : POSITION;
@@ -21,7 +27,9 @@ struct OutputType
     float4 position : SV_POSITION;
     float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
-    float4 lightViewPos[LIGHT_COUNT] : TEXCOORD1;
+    float3 worldPosition : TEXCOORD1;
+    float3 viewVector : TEXCOORD2;
+    float4 lightViewPos[LIGHT_COUNT] : TEXCOORD3;
 };
 
 
@@ -46,6 +54,12 @@ OutputType main(InputType input)
     output.tex = input.tex;
     output.normal = mul(input.normal, (float3x3)worldMatrix);
     output.normal = normalize(output.normal);
+    
+    output.worldPosition = mul(input.position, worldMatrix).xyz;
+    
+    float3 worldPosition = mul(input.position, worldMatrix);
+    output.viewVector = cameraPosition.xyz - worldPosition.xyz;
+    output.viewVector = normalize(output.viewVector);
 
 	return output;
 }

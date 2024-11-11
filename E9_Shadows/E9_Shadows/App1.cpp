@@ -32,28 +32,52 @@ void App1::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeigh
 
 	// This is your shadow map
 	// Configure directional light
-	for (int i = 0; i < 2; i++)
+// Lights
+	for (int i = 0; i < LIGHT_COUNT; i++)
 	{
 		shadowMap[i] = new ShadowMap(renderer->getDevice(), shadowmapWidth, shadowmapHeight);
 
 		light[i] = new Light();
-		light[i]->setAmbientColour(0.3f, 0.3f, 0.3f, 1.0f);
+		light[i]->setAmbientColour(0.0f, 0.0f, 0.0f, 1.0f);
+		lightAmb[i][0] = light[i]->getAmbientColour().x;
+		lightAmb[i][1] = light[i]->getAmbientColour().y;
+		lightAmb[i][2] = light[i]->getAmbientColour().z;
+		lightAmb[i][3] = light[i]->getAmbientColour().w;
 		light[i]->setDiffuseColour(1.0f, 1.0f, 1.0f, 1.0f);
-		light[i]->setDirection(0.0f, -0.7f, 0.7f);
-		light[i]->setPosition(0.f, 0.f, -10.f);
-		light[i]->generateOrthoMatrix((float)sceneWidth, (float)sceneHeight, 0.1f, 200.f);
+		lightDiff[i][0] = light[i]->getDiffuseColour().x;
+		lightDiff[i][1] = light[i]->getDiffuseColour().y;
+		lightDiff[i][2] = light[i]->getDiffuseColour().z;
+		lightDiff[i][3] = light[i]->getDiffuseColour().w;
+		light[i]->setPosition(0.0f, 00.0f, -10.0f);
 		lightPos[i][0] = light[i]->getPosition().x;
 		lightPos[i][1] = light[i]->getPosition().y;
 		lightPos[i][2] = light[i]->getPosition().z;
+		light[i]->setDirection(0.0f, -0.7f, 0.7f);
 		lightDir[i][0] = light[i]->getDirection().x;
 		lightDir[i][1] = light[i]->getDirection().y;
 		lightDir[i][2] = light[i]->getDirection().z;
+		light[i]->setSpecularPower(100.0f);
+		lightSpecPower[i] = light[i]->getSpecularPower();
+		light[i]->setSpecularColour(1.0f, 0.0f, 0.0f, 0.5f);
+		lightSpec[i][0] = light[i]->getSpecularColour().x;
+		lightSpec[i][1] = light[i]->getSpecularColour().y;
+		lightSpec[i][2] = light[i]->getSpecularColour().z;
+		lightSpec[i][3] = light[i]->getSpecularColour().w;
+		light[i]->setAttenuationConstant(0.5f);
+		lightAtten[i][0] = light[i]->getAttenuationConstant();
+		light[i]->setAttenuationLinear(0.125f);
+		lightAtten[i][1] = light[i]->getAttenuationLinear();
+		light[i]->setAttenuationQuadratic(0.0f);
+		lightAtten[i][2] = light[i]->getAttenuationQuadratic();
 
+		lightSphere[i] = new SphereMesh(renderer->getDevice(), renderer->getDeviceContext());
+
+		light[i]->generateOrthoMatrix((float)sceneWidth, (float)sceneHeight, 0.1f, 200.f);
 	}
 
 
 
-	orthoMesh = new OrthoMesh(renderer->getDevice(), renderer->getDeviceContext(), screenWidth / 2, screenHeight/ 2, -screenWidth * 0.75f, screenHeight * 0.75f);
+	orthoMesh = new OrthoMesh(renderer->getDevice(), renderer->getDeviceContext(), screenWidth / 2, screenHeight/ 2, -screenWidth * 0.25f, screenHeight * 0.25f);
 	renderTexture = new RenderTexture(renderer->getDevice(), screenWidth, screenHeight, SCREEN_NEAR, SCREEN_DEPTH);
 
 }
@@ -73,11 +97,19 @@ bool App1::frame()
 	bool result;
 
 	modelRot += 0.01f;
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < LIGHT_COUNT; i++)
 	{
+		light[i]->setType(lightType[i]);
 		light[i]->setPosition(lightPos[i][0], lightPos[i][1], lightPos[i][2]);
-		light[i]->setDirection(lightDir[i][0], lightDir[i][1], lightDir[i][2]);
+		if (lightDir[i][0] != 0 || lightDir[i][1] != 0 || lightDir[i][2] != 0)
+			light[i]->setDirection(lightDir[i][0], lightDir[i][1], lightDir[i][2]);
 		light[i]->setDiffuseColour(lightDiff[i][0], lightDiff[i][1], lightDiff[i][2], lightDiff[i][3]);
+		light[i]->setAmbientColour(lightAmb[i][0], lightAmb[i][1], lightAmb[i][2], lightAmb[i][3]);
+		light[i]->setSpecularColour(lightSpec[i][0], lightSpec[i][1], lightSpec[i][2], lightSpec[i][3]);
+		light[i]->setSpecularPower(lightSpecPower[i]);
+		light[i]->setAttenuationConstant(lightAtten[i][0]);
+		light[i]->setAttenuationLinear(lightAtten[i][1]);
+		light[i]->setAttenuationQuadratic(lightAtten[i][2]);
 	}
 
 
@@ -99,7 +131,7 @@ bool App1::frame()
 
 bool App1::render()
 {
-	//texturePass();
+	texturePass();
 	// Perform depth pass
 	depthPass();
 	// Render scene
@@ -116,11 +148,11 @@ void App1::texturePass()
 	renderTexture->clearRenderTarget(renderer->getDeviceContext(), 0.0f, 0.0f, 1.0f, 0.5f);
 
 
-	XMMATRIX lightViewMatrix[2];
-	XMMATRIX lightProjectionMatrix[2];
+	XMMATRIX lightViewMatrix[LIGHT_COUNT];
+	XMMATRIX lightProjectionMatrix[LIGHT_COUNT];
 	XMMATRIX worldMatrix = renderer->getWorldMatrix();
 	// get the world, view, and projection matrices from the camera and d3d objects.
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < LIGHT_COUNT; i++)
 	{
 		light[i]->generateViewMatrix();
 		lightViewMatrix[i] = light[i]->getViewMatrix();
@@ -143,12 +175,6 @@ void App1::texturePass()
 	model->sendData(renderer->getDeviceContext());
 	depthShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, *lightViewMatrix, *lightProjectionMatrix);
 	depthShader->render(renderer->getDeviceContext(), model->getIndexCount());
-
-	worldMatrix = renderer->getWorldMatrix();
-	worldMatrix = XMMatrixTranslation(light[0]->getPosition().x, light[0]->getPosition().y, light[0]->getPosition().z);
-	sphere->sendData(renderer->getDeviceContext());
-	depthShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, *lightViewMatrix, *lightProjectionMatrix);
-	depthShader->render(renderer->getDeviceContext(), sphere->getIndexCount());
 
 	worldMatrix = renderer->getWorldMatrix();
 	worldMatrix = XMMatrixTranslation(10.f, 10.f, 10.f);
@@ -222,7 +248,7 @@ void App1::finalPass()
 	// Render floor
 	mesh->sendData(renderer->getDeviceContext());
 	shadowShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, 
-		textureMgr->getTexture(L"brick"), shadowMap, light);
+		textureMgr->getTexture(L"brick"), shadowMap, light, camera);
 	shadowShader->render(renderer->getDeviceContext(), mesh->getIndexCount());
 
 	// Render model
@@ -233,20 +259,24 @@ void App1::finalPass()
 	worldMatrix += XMMatrixRotationX(modelRot);
 
 	model->sendData(renderer->getDeviceContext());
-	shadowShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, textureMgr->getTexture(L"brick"), shadowMap, light);
+	shadowShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, textureMgr->getTexture(L"brick"), shadowMap, light, camera);
 	shadowShader->render(renderer->getDeviceContext(), model->getIndexCount());
-
-	worldMatrix = renderer->getWorldMatrix();
-	worldMatrix = XMMatrixTranslation(light[0]->getPosition().x, light[0]->getPosition().y, light[0]->getPosition().z);
-	sphere->sendData(renderer->getDeviceContext());
-	shadowShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, textureMgr->getTexture(L"brick"), shadowMap, light);
-	shadowShader->render(renderer->getDeviceContext(), sphere->getIndexCount());
 
 	worldMatrix = renderer->getWorldMatrix();
 	worldMatrix = XMMatrixTranslation(10.f, 10.f, 10.f);
 	cube->sendData(renderer->getDeviceContext());
-	shadowShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, textureMgr->getTexture(L"brick"), shadowMap, light);
+	shadowShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, textureMgr->getTexture(L"brick"), shadowMap, light, camera);
 	shadowShader->render(renderer->getDeviceContext(), cube->getIndexCount());
+
+	for (int i = 0; i < LIGHT_COUNT; i++)
+	{
+		worldMatrix = renderer->getWorldMatrix();
+		worldMatrix = XMMatrixTranslation(light[i]->getPosition().x, light[i]->getPosition().y, light[i]->getPosition().z);
+
+		lightSphere[i]->sendData(renderer->getDeviceContext());
+		shadowShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, textureMgr->getTexture(L"brick"),shadowMap, light, camera);
+		shadowShader->render(renderer->getDeviceContext(), lightSphere[i]->getIndexCount());
+	}
 
 	// RENDER THE RENDER TEXTURE SCENE
 	// Requires 2D rendering and an ortho mesh.
@@ -254,7 +284,7 @@ void App1::finalPass()
 	XMMATRIX orthoMatrix = renderer->getOrthoMatrix();  // ortho matrix for 2D rendering
 	XMMATRIX orthoViewMatrix = camera->getOrthoViewMatrix();	// Default camera position for orthographic rendering
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < LIGHT_COUNT; i++)
 	{
 		orthoMesh->sendData(renderer->getDeviceContext());
 		textureShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, orthoViewMatrix, orthoMatrix, shadowMap[i]->getDepthMapSRV());
@@ -278,14 +308,21 @@ void App1::gui()
 	renderer->getDeviceContext()->DSSetShader(NULL, NULL, 0);
 
 	// Build UI
-	ImGui::Text("FPS: %.2f", timer->getFPS());
-	ImGui::Checkbox("Wireframe mode", &wireframeToggle);
-	ImGui::SliderFloat3("Pos", lightPos[0], -40, 40);
-	ImGui::SliderFloat3("Dur", lightDir[0], -4, 4);
-	ImGui::ColorEdit4("Diff0", lightDiff[0]);
-	ImGui::SliderFloat3("Pos1", lightPos[1], -40, 40);
-	ImGui::SliderFloat3("Dur1", lightDir[1], -4, 4);
-	ImGui::ColorEdit4("Diff1", lightDiff[1]);
+	for (int i = 0; i < LIGHT_COUNT; i++)
+	{
+		std::string name = "Light" + std::to_string(i);
+		if (ImGui::CollapsingHeader(name.c_str()))
+		{
+			ImGui::InputInt(("Type " + std::to_string(i)).c_str(), &lightType[i]);
+			ImGui::InputFloat3(("LightPos: " + std::to_string(i)).c_str(), lightPos[i]);
+			ImGui::SliderFloat3(("LightDir: " + std::to_string(i)).c_str(), lightDir[i], -1, 1);
+			ImGui::ColorEdit4(("Light ambient: " + std::to_string(i)).c_str(), lightAmb[i]);
+			ImGui::ColorEdit4(("Light diffuse: " + std::to_string(i)).c_str(), lightDiff[i]);
+			ImGui::ColorEdit4(("Specular Colour: " + std::to_string(i)).c_str(), lightSpec[i]);
+			ImGui::SliderFloat(("Specular Power: " + std::to_string(i)).c_str(), &lightSpecPower[i], 0, 1000);
+			ImGui::InputFloat3(("Attenuation: " + std::to_string(i)).c_str(), lightAtten[i]);
+		}
+	}
 
 	// Render UI
 	ImGui::Render();

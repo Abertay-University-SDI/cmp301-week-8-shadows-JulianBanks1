@@ -42,6 +42,10 @@ public:
 	void setSpecularPower(float power);											///< Set specular power
 	void setPosition(float x, float y, float z);								///< Set light position (for point lights)
 	void setLookAt(float x, float y, float z);									///< Set light lookAt (near deprecation)
+	void setType(int type);
+	void setAttenuationConstant(float val);
+	void setAttenuationLinear(float val);
+	void setAttenuationQuadratic(float val);
 
 	// Getters
 	XMFLOAT4 getAmbientColour();		///< Get ambient colour, returns float4
@@ -53,7 +57,10 @@ public:
 	XMMATRIX getViewMatrix();			///< Get light view matrix for shadow mapping, returns XMMATRIX
 	XMMATRIX getProjectionMatrix();		///< Get light projection matrix for shadow mapping, returns XMMATRIX
 	XMMATRIX getOrthoMatrix();			///< Get light orthographic matrix for shadow mapping, returns XMMATRIX
-
+	int getType();
+	float getAttenuationConstant();
+	float getAttenuationLinear();
+	float getAttenuationQuadratic();
 
 protected:
 	XMFLOAT4 ambientColour;
@@ -66,6 +73,10 @@ protected:
 	XMMATRIX projectionMatrix;
 	XMMATRIX orthoMatrix;
 	XMVECTOR lookAt; 
+	int type;
+	float attenuationConstant;
+	float attenuationLinear;
+	float attenuationQuadratic;
 };
 
 #endif
