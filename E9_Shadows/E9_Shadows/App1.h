@@ -20,7 +20,7 @@ public:
 
 protected:
 	bool render();
-	void texturePass();
+	void lightDebugPass();
 	void depthPass();
 	void finalPass();
 	void gui();
@@ -34,9 +34,8 @@ private:
 	DepthShader* depthShader;
 
 
-	OrthoMesh* orthoMesh;
-	OrthoMesh* orthoMesh2;
-	RenderTexture* renderTexture;
+	OrthoMesh* lightDebugMesh;
+	RenderTexture* lightDebugTexture;
 	CubeMesh* cube;
 	float modelRot = 0;
 
@@ -51,6 +50,8 @@ private:
 	int lightType[LIGHT_COUNT];
 	float lightAtten[LIGHT_COUNT][3];
 	float spotCutoff[LIGHT_COUNT][2];
+	bool lightDebugDisplays[LIGHT_COUNT];
+	bool showingLightDebug;
 	SphereMesh* lightSphere[LIGHT_COUNT];
 	ShadowMap* shadowMap[LIGHT_COUNT];
 };

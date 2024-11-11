@@ -82,9 +82,8 @@ void App1::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeigh
 
 
 
-	orthoMesh = new OrthoMesh(renderer->getDevice(), renderer->getDeviceContext(), screenWidth / 2, screenHeight/ 2, -screenWidth * 0.25f, screenHeight * 0.25f);
-	orthoMesh2 = new OrthoMesh(renderer->getDevice(), renderer->getDeviceContext(), screenWidth / 2, screenHeight / 2, -screenWidth * 0.25f, screenHeight * 0.25f);
-	renderTexture = new RenderTexture(renderer->getDevice(), screenWidth, screenHeight, SCREEN_NEAR, SCREEN_DEPTH);
+	lightDebugMesh = new OrthoMesh(renderer->getDevice(), renderer->getDeviceContext(), screenWidth / 4, screenHeight / 4, -screenWidth * 0.35f, screenHeight * 0.35f);
+	lightDebugTexture = new RenderTexture(renderer->getDevice(), screenWidth, screenHeight, SCREEN_NEAR, SCREEN_DEPTH);
 
 }
 
@@ -141,7 +140,7 @@ bool App1::frame()
 
 bool App1::render()
 {
-	texturePass();
+	lightDebugPass();
 	// Perform depth pass
 	depthPass();
 	// Render scene
@@ -150,12 +149,24 @@ bool App1::render()
 	return true;
 }
 
-void App1::texturePass()
+void App1::lightDebugPass()
 {
+	int lightToDisplay = -1;
+	for (int i = 0; i < LIGHT_COUNT; i++)
+	{
+		if (lightDebugDisplays[i])
+		{
+			showingLightDebug = true;
+			lightToDisplay = i;
+			break;
+		}
+	}
+	if (lightToDisplay == -1) { showingLightDebug = false; return; }
+
 	// Set the render target to be the render to texture.
 	//shadowMap->BindDsvAndSetNullRenderTarget(renderer->getDeviceContext());
-	renderTexture->setRenderTarget(renderer->getDeviceContext());
-	renderTexture->clearRenderTarget(renderer->getDeviceContext(), 1.0f, 0.0f, 0.0f, 1.0f);
+	lightDebugTexture->setRenderTarget(renderer->getDeviceContext());
+	lightDebugTexture->clearRenderTarget(renderer->getDeviceContext(), 1.0f, 0.0f, 0.0f, 1.0f);
 
 
 	//XMMATRIX lightViewMatrix[LIGHT_COUNT];
@@ -168,8 +179,8 @@ void App1::texturePass()
 	//	lightViewMatrix[i] = light[i]->getViewMatrix();
 	//	lightProjectionMatrix[i] = light[i]->getOrthoMatrix();
 	//}
-	XMMATRIX lightViewMatrix = light[0]->getViewMatrix();
-	XMMATRIX lightProjectionMatrix = light[0]->getProjectionMatrix();
+	XMMATRIX lightViewMatrix = light[lightToDisplay]->getViewMatrix();
+	XMMATRIX lightProjectionMatrix = light[lightToDisplay]->getProjectionMatrix();
 	XMMATRIX worldMatrix = renderer->getWorldMatrix();
 
 	worldMatrix = XMMatrixTranslation(-50.f, 0.f, -10.f);
@@ -295,7 +306,6 @@ void App1::finalPass()
 
 	// RENDER THE RENDER TEXTURE SCENE
 	// Requires 2D rendering and an ortho mesh.
-	renderer->setZBuffer(false);
 	XMMATRIX orthoMatrix = renderer->getOrthoMatrix();  // ortho matrix for 2D rendering
 	XMMATRIX orthoViewMatrix = camera->getOrthoViewMatrix();	// Default camera position for orthographic rendering
 	worldMatrix = renderer->getWorldMatrix();
@@ -309,12 +319,14 @@ void App1::finalPass()
 		renderer->setZBuffer(true);*/
 
 
-	renderer->setZBuffer(false);
-	orthoMesh2->sendData(renderer->getDeviceContext());
-	textureShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, orthoViewMatrix, orthoMatrix, renderTexture->getShaderResourceView());
-	textureShader->render(renderer->getDeviceContext(), orthoMesh2->getIndexCount());
-	renderer->setZBuffer(true);
-	
+	if (showingLightDebug)
+	{
+		renderer->setZBuffer(false);
+		lightDebugMesh->sendData(renderer->getDeviceContext());
+		textureShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, orthoViewMatrix, orthoMatrix, lightDebugTexture->getShaderResourceView());
+		textureShader->render(renderer->getDeviceContext(), lightDebugMesh->getIndexCount());
+		renderer->setZBuffer(true);
+	}
 
 	gui();
 	renderer->endScene();
@@ -330,22 +342,36 @@ void App1::gui()
 	renderer->getDeviceContext()->DSSetShader(NULL, NULL, 0);
 
 	// Build UI
-	for (int i = 0; i < LIGHT_COUNT; i++)
+	if (ImGui::CollapsingHeader("Lights"))
 	{
-		std::string name = "Light" + std::to_string(i);
-		if (ImGui::CollapsingHeader(name.c_str()))
+		for (int i = 0; i < LIGHT_COUNT; i++)
 		{
-			ImGui::InputInt(("Type " + std::to_string(i)).c_str(), &lightType[i]);
-			ImGui::InputFloat3(("LightPos " + std::to_string(i)).c_str(), lightPos[i]);
-			ImGui::SliderFloat3(("LightDir " + std::to_string(i)).c_str(), lightDir[i], -1, 1);
-			ImGui::ColorEdit4(("Light ambient " + std::to_string(i)).c_str(), lightAmb[i]);
-			ImGui::ColorEdit4(("Light diffuse " + std::to_string(i)).c_str(), lightDiff[i]);
-			ImGui::ColorEdit4(("Specular Colour " + std::to_string(i)).c_str(), lightSpec[i]);
-			ImGui::SliderFloat(("Specular Power " + std::to_string(i)).c_str(), &lightSpecPower[i], 0, 1000);
-			ImGui::InputFloat3(("Attenuation " + std::to_string(i)).c_str(), lightAtten[i]);
-			ImGui::SliderFloat2(("Spot Cutoff " + std::to_string(i)).c_str(), spotCutoff[i], 0, 3.14);
+			std::string name = "Light" + std::to_string(i);
+			if (ImGui::CollapsingHeader(name.c_str()))
+			{
+				ImGui::InputInt(("Type " + std::to_string(i)).c_str(), &lightType[i]);
+				ImGui::InputFloat3(("LightPos " + std::to_string(i)).c_str(), lightPos[i]);
+				ImGui::SliderFloat3(("LightDir " + std::to_string(i)).c_str(), lightDir[i], -1, 1);
+				ImGui::ColorEdit4(("Light ambient " + std::to_string(i)).c_str(), lightAmb[i]);
+				ImGui::ColorEdit4(("Light diffuse " + std::to_string(i)).c_str(), lightDiff[i]);
+				ImGui::ColorEdit4(("Specular Colour " + std::to_string(i)).c_str(), lightSpec[i]);
+				ImGui::SliderFloat(("Specular Power " + std::to_string(i)).c_str(), &lightSpecPower[i], 0, 1000);
+				ImGui::InputFloat3(("Attenuation " + std::to_string(i)).c_str(), lightAtten[i]);
+				ImGui::SliderFloat2(("Spot Cutoff " + std::to_string(i)).c_str(), spotCutoff[i], 0, 3.14);
+				ImGui::Checkbox(("Debug View " + std::to_string(i)).c_str(), &lightDebugDisplays[i]);
+			}
 		}
 	}
+	if (ImGui::CollapsingHeader("Post process"))
+	{
+
+	}
+	if (ImGui::CollapsingHeader("Vertex manip"))
+	{
+
+	}
+
+	
 
 	// Render UI
 	ImGui::Render();
