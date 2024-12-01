@@ -54,6 +54,8 @@ private:
 	bool showingLightDebug;
 	SphereMesh* lightSphere[LIGHT_COUNT];
 	ShadowMap* shadowMap[LIGHT_COUNT];
+
+	float moonPos;
 };
 
 #endif

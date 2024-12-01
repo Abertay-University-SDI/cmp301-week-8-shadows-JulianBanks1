@@ -140,6 +140,10 @@ bool App1::frame()
 
 bool App1::render()
 {
+	moonPos += timer->getTime();
+	light[0]->setPosition(0, cos(moonPos) * 30, sin(moonPos) * 30);
+	light[0]->setDirection(0, -cos(moonPos), -sin(moonPos));
+
 	lightDebugPass();
 	// Perform depth pass
 	depthPass();
